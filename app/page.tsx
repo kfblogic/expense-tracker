@@ -32,7 +32,7 @@ export default function Home() {
         </div>
 
         <p className="stencil mt-5 px-1 text-xs tracking-wide text-chalk/50">
-          Buat dipake sendiri · Rupiah · Fase 0–3 (lihat PROGRESS.md)
+          Catatan pengeluaran pribadi · Rupiah · Gratis
         </p>
       </main>
     </div>
