@@ -1,0 +1,291 @@
+@import "tailwindcss";
+
+/*
+  PAPAN WARUNG — token enamel & cat.
+  Ground = bidang enamel kobalt (page ground, 40%+ permukaan).
+  Slat krem = permukaan tulis (kartu, baris, input).
+  Merah sinyal = alert, boros anggaran, hapus, garis aksen dicat tangan.
+*/
+:root {
+  --ground: #124b60;
+  --board: #15607a;
+  --board-deep: #0e4557;
+  --cream: #f4ead6;
+  --cream-deep: #e8d9ba;
+  --line: #c9b78f;
+  --signal: #c8312a;
+  --signal-deep: #9c2620;
+  --chalk: #f7f4ec;
+  --ink: #211c17;
+  --ink-soft: #5c5347;
+
+  /* Palet kategoris — divalidasi dataviz (adjacent CVD, mode light, surface cream).
+     Dipakai untuk kotak-cat kategori DAN seri chart. Bukan warna kontrol. */
+  --cat-makan: #eb6834;
+  --cat-transport: #1baf7a;
+  --cat-hiburan: #eda100;
+  --cat-tagihan: #e87ba4;
+  --cat-belanja: #008300;
+  --cat-kesehatan: #4a3aa7;
+  --cat-lainnya: #7a6f5d;
+  /* Seri tunggal tren harian */
+  --trend: #15607a;
+  /* Kontrol: amber "hampir batas" anggaran (aman = kobalt, lewat = signal) */
+  --budget-warn: #d98324;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-board: var(--board);
+  --color-board-deep: var(--board-deep);
+  --color-cream: var(--cream);
+  --color-cream-deep: var(--cream-deep);
+  --color-line: var(--line);
+  --color-signal: var(--signal);
+  --color-signal-deep: var(--signal-deep);
+  --color-chalk: var(--chalk);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+
+  --font-sans: var(--font-papan);
+  --font-papan: var(--font-papan);
+  --font-numeral: var(--font-numeral);
+  --font-mono: var(--font-mono);
+}
+
+/*
+  Dark mode: dua sumber. (1) preferensi OS via @media — kecuali user memaksa
+  "terang" lewat [data-theme="light"]. (2) user memaksa "gelap" lewat
+  [data-theme="dark"] (disetel server dari user_metadata.theme, lihat Fase 6).
+  Blok token identik; @apply/mixin tak ada di CSS jadi didaftar dua kali.
+*/
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ground: #101813;
+    --board: #2a86a6;
+    --board-deep: #10475a;
+    --cream: #37301f;
+    --cream-deep: #2a2417;
+    --line: #63583f;
+    --signal: #e2564a;
+    --signal-deep: #b83227;
+    --chalk: #f4efe4;
+    --ink: #f0e7d6;
+    --ink-soft: #c2b498;
+
+    /* Langkah gelap — divalidasi dataviz (mode dark, surface slat gelap) */
+    --cat-makan: #d95926;
+    --cat-transport: #199e70;
+    --cat-hiburan: #c98500;
+    --cat-tagihan: #d55181;
+    --cat-belanja: #3aa53a;
+    --cat-kesehatan: #9085e9;
+    --cat-lainnya: #9a8f7d;
+    --trend: #5fa3bb;
+    --budget-warn: #e0952f;
+  }
+}
+
+:root[data-theme='dark'] {
+  --ground: #101813;
+  --board: #2a86a6;
+  --board-deep: #10475a;
+  --cream: #37301f;
+  --cream-deep: #2a2417;
+  --line: #63583f;
+  --signal: #e2564a;
+  --signal-deep: #b83227;
+  --chalk: #f4efe4;
+  --ink: #f0e7d6;
+  --ink-soft: #c2b498;
+
+  --cat-makan: #d95926;
+  --cat-transport: #199e70;
+  --cat-hiburan: #c98500;
+  --cat-tagihan: #d55181;
+  --cat-belanja: #3aa53a;
+  --cat-kesehatan: #9085e9;
+  --cat-lainnya: #9a8f7d;
+  --trend: #5fa3bb;
+  --budget-warn: #e0952f;
+}
+
+body {
+  background-color: var(--ground);
+  color: var(--chalk);
+  font-family: var(--font-papan), "Barlow Condensed", system-ui, sans-serif;
+  font-size: 15px;
+}
+
+/* Browser surfaces di-tema dari cat */
+:root {
+  color-scheme: light;
+  accent-color: var(--signal);
+  caret-color: var(--signal);
+  scrollbar-width: thin;
+  scrollbar-color: var(--board) transparent;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+::selection {
+  background-color: var(--signal);
+  color: var(--chalk);
+}
+
+/* --- Material: enamel, cat, baut, grain --- */
+
+/* Slat krem — permukaan tulis */
+.slat {
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 0 0 rgb(0 0 0 / 0.18);
+}
+
+/* Kilau enamel tipis di bidang kobalt */
+.enamel {
+  background-image: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.09) 0%,
+    rgb(255 255 255 / 0.02) 34%,
+    rgb(0 0 0 / 0.06) 100%
+  );
+}
+
+/* Papan digantung — kepala baut di empat sudut */
+.bolted {
+  --bolt: rgb(0 0 0 / 0.32);
+  --bolt-hi: rgb(255 255 255 / 0.16);
+  background-image:
+    radial-gradient(circle at 15px 15px, var(--bolt-hi) 0 4px, transparent 5px),
+    radial-gradient(circle at 15px 14px, var(--bolt) 0 3px, transparent 4px),
+    radial-gradient(circle at calc(100% - 15px) 15px, var(--bolt-hi) 0 4px, transparent 5px),
+    radial-gradient(circle at calc(100% - 15px) 14px, var(--bolt) 0 3px, transparent 4px),
+    radial-gradient(circle at 15px calc(100% - 14px), var(--bolt-hi) 0 4px, transparent 5px),
+    radial-gradient(circle at 15px calc(100% - 15px), var(--bolt) 0 3px, transparent 4px),
+    radial-gradient(circle at calc(100% - 15px) calc(100% - 14px), var(--bolt-hi) 0 4px, transparent 5px),
+    radial-gradient(circle at calc(100% - 15px) calc(100% - 15px), var(--bolt) 0 3px, transparent 4px);
+  background-repeat: no-repeat;
+}
+
+/* Garis cat aus tangan di bawah teks */
+.paint-underline {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='14' viewBox='0 0 240 14' preserveAspectRatio='none'%3E%3Cpath d='M3 8 C 44 2 78 12 120 7 S 198 3 237 8' stroke='%23c8312a' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 100%;
+  background-size: 100% 0.55em;
+  padding-bottom: 0.3em;
+}
+
+/* Grain kertas/enamel — halus */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Numeral dicat — bayang sablon tipis */
+.painted-numeral {
+  font-family: var(--font-numeral), "Anton", Impact, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-shadow: 2px 2px 0 rgb(0 0 0 / 0.16);
+  line-height: 0.92;
+}
+
+/* Kop bab — kondensat kapital dilacak */
+.stencil {
+  font-family: var(--font-papan), "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .settle {
+    animation: settle 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- Cetak / Simpan PDF (halaman /ringkasan) ------------------------------- */
+@media print {
+  /* Paksa dokumen terang apa pun tema layar; blok terakhir di file = menang */
+  :root,
+  :root[data-theme='light'],
+  :root[data-theme='dark'] {
+    --ground: #ffffff;
+    --board: #ffffff;
+    --board-deep: #555555;
+    --cream: #ffffff;
+    --cream-deep: #ffffff;
+    --line: #999999;
+    --signal: #b3261e;
+    --signal-deep: #b3261e;
+    --chalk: #111111;
+    --ink: #111111;
+    --ink-soft: #444444;
+  }
+  .no-print,
+  header {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #111;
+    font-size: 11pt;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .grain::after {
+    display: none !important;
+  }
+  .slat,
+  .bolted,
+  .enamel {
+    box-shadow: none !important;
+    background-image: none !important;
+    border-color: #999 !important;
+  }
+  .painted-numeral {
+    text-shadow: none !important;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+}
