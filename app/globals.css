@@ -220,6 +220,34 @@ body {
     animation: settle 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 }
+
+/* --- Loading pindah halaman (TopProgress) -------------------------------- */
+.nav-bar {
+  animation: nav-slide 1s ease-in-out infinite;
+}
+@keyframes nav-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-bar {
+    animation: none;
+    width: 100%;
+    opacity: 0.7;
+  }
+}
+/* Selama navigasi: cursor menunggu + tautan tak bisa di-spam-klik
+   (tombol & form tetap jalan). */
+html.is-navigating {
+  cursor: progress;
+}
+html.is-navigating a {
+  pointer-events: none;
+}
 @keyframes settle {
   from {
     opacity: 0;
