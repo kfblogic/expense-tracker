@@ -24,11 +24,29 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+const SITE_URL = 'https://catat.kevinhub.space';
+const TITLE = 'Expense Tracker — Papan Pengeluaran Bulanan';
+const DESCRIPTION = 'Catat pengeluaran harian pribadi secepat menulis di papan warung.';
+
 export const metadata: Metadata = {
-  title: 'Expense Tracker — Papan Pengeluaran Bulanan',
-  description: 'Catat pengeluaran harian pribadi secepat menulis di papan warung.',
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'Expense Tracker', statusBarStyle: 'default' },
+  openGraph: {
+    type: 'website',
+    url: SITE_URL,
+    siteName: 'Expense Tracker',
+    title: TITLE,
+    description: DESCRIPTION,
+    locale: 'id_ID',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 export const viewport: Viewport = {
