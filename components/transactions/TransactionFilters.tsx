@@ -16,7 +16,7 @@ interface TransactionFiltersProps {
 }
 
 const fieldBox =
-  'mt-1 block w-full border border-line bg-cream-deep px-3 py-2 text-sm text-ink outline-none focus:border-signal';
+  'mt-1 block w-full min-w-0 border border-line bg-cream-deep px-3 py-2 text-sm text-ink outline-none focus:border-signal';
 
 export default function TransactionFilters({
   categories,
@@ -45,7 +45,7 @@ export default function TransactionFilters({
       </label>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <label className="block">
+        <label className="block min-w-0">
           <span className="stencil block text-[0.625rem] tracking-widest text-ink-soft">Kategori</span>
           <select
             value={value.categoryId}
@@ -61,7 +61,7 @@ export default function TransactionFilters({
           </select>
         </label>
 
-        <label className="block">
+        <label className="block min-w-0">
           <span className="stencil block text-[0.625rem] tracking-widest text-ink-soft">Dari tanggal</span>
           <input
             type="date"
@@ -72,7 +72,7 @@ export default function TransactionFilters({
           />
         </label>
 
-        <label className="block">
+        <label className="block min-w-0">
           <span className="stencil block text-[0.625rem] tracking-widest text-ink-soft">Sampai tanggal</span>
           <input
             type="date"

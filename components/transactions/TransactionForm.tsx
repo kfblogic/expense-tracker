@@ -27,7 +27,7 @@ interface TransactionFormProps {
 
 const fieldLabel = 'stencil block text-xs tracking-widest text-ink-soft';
 const fieldBox =
-  'mt-1 block w-full border border-line bg-cream-deep px-3 py-2 text-sm text-ink outline-none focus:border-signal';
+  'mt-1 block w-full min-w-0 border border-line bg-cream-deep px-3 py-2 text-sm text-ink outline-none focus:border-signal';
 
 export default function TransactionForm({ categories: initialCategories, transaction, onDone }: TransactionFormProps) {
   const [state, formAction, pending] = useActionState(saveTransaction, null);
@@ -82,7 +82,7 @@ export default function TransactionForm({ categories: initialCategories, transac
 
       <div>
         <span className={fieldLabel}>Jumlah</span>
-        <div className="mt-1 flex items-stretch border border-line bg-cream-deep focus-within:border-signal">
+        <div className="mt-1 flex items-stretch overflow-hidden rounded-lg border border-line bg-cream-deep focus-within:border-signal">
           <span className="stencil grid place-items-center border-r border-line bg-cream px-3 text-sm text-ink-soft">
             Rp
           </span>
@@ -94,7 +94,7 @@ export default function TransactionForm({ categories: initialCategories, transac
             value={displayAmount}
             onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
             placeholder="25.000"
-            className="painted-numeral w-full bg-transparent px-3 py-2 text-2xl text-ink outline-none [text-shadow:none]"
+            className="painted-numeral w-full min-w-0 rounded-none bg-transparent px-3 py-2 text-2xl text-ink outline-none [text-shadow:none]"
           />
         </div>
       </div>
@@ -156,7 +156,7 @@ export default function TransactionForm({ categories: initialCategories, transac
       </div>
 
       <div className="flex gap-3">
-        <label className="flex-1">
+        <label className="min-w-0 flex-1">
           <span className={fieldLabel}>Tanggal</span>
           <input
             type="date"
@@ -182,7 +182,7 @@ export default function TransactionForm({ categories: initialCategories, transac
       </label>
 
       {!transaction && (
-        <div className="border border-dashed border-line bg-cream px-3 py-2.5">
+        <div className="rounded-lg border border-dashed border-line bg-cream px-3 py-2.5">
           <label className="flex cursor-pointer items-start gap-2.5">
             <input
               type="checkbox"
@@ -214,7 +214,7 @@ export default function TransactionForm({ categories: initialCategories, transac
       )}
 
       {state && !state.ok && (
-        <p className="border border-signal bg-signal/10 px-3 py-2 text-sm text-signal-deep">{state.error}</p>
+        <p className="rounded-lg border border-signal bg-signal/10 px-3 py-2 text-sm text-signal-deep">{state.error}</p>
       )}
 
       <div className="flex gap-2 border-t-2 border-dashed border-line pt-3">

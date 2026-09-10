@@ -164,7 +164,7 @@ export default function TransactionManager({ categories, transactions }: Transac
             return (
               <li key={date}>
                 <div
-                  className={`stencil flex items-baseline justify-between px-2 py-1 text-xs tracking-widest ${
+                  className={`stencil flex items-baseline justify-between rounded-md px-2 py-1 text-xs tracking-widest ${
                     isToday ? 'bg-signal text-chalk' : 'text-chalk/70'
                   }`}
                 >
