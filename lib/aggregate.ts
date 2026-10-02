@@ -23,9 +23,25 @@ export function isoLocal(d: Date): string {
 export interface MonthContext {
   monthStart: string;
   prevMonthStart: string;
+  nextMonthStart: string;
   today: string;
   dayOfMonth: number;
 }
+
+/**
+ * `?bulan=YYYY-MM` → tanggal acuan buat monthContext: hari terakhir bulan itu
+ * kalau bulan lampau; selain itu (kosong/invalid/bulan berjalan/masa depan) hari ini.
+ */
+export function monthRef(param: string | undefined, now: Date = new Date()): Date {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(param ?? '');
+  if (!match) return now;
+  const lastDay = new Date(Number(match[1]), Number(match[2]), 0);
+  return lastDay < new Date(now.getFullYear(), now.getMonth(), 1) ? lastDay : now;
+}
+
+/** Kunci URL `YYYY-MM` untuk sebuah tanggal. */
+export const monthKey = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
 export function monthContext(ref: Date = new Date()): MonthContext {
   const y = ref.getFullYear();
@@ -33,6 +49,7 @@ export function monthContext(ref: Date = new Date()): MonthContext {
   return {
     monthStart: isoLocal(new Date(y, m, 1)),
     prevMonthStart: isoLocal(new Date(y, m - 1, 1)),
+    nextMonthStart: isoLocal(new Date(y, m + 1, 1)),
     today: isoLocal(ref),
     dayOfMonth: ref.getDate(),
   };

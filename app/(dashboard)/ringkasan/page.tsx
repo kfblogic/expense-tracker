@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import {
   monthContext,
+  monthRef,
   sumAmount,
   deltaPct,
   categoryBreakdown,
@@ -11,6 +12,7 @@ import {
   type BudgetRow,
 } from '@/lib/aggregate';
 import PrintButton from '@/components/ui/PrintButton';
+import MonthNav from '@/components/ui/MonthNav';
 
 interface Row {
   amount: number;
@@ -20,27 +22,33 @@ interface Row {
   categories: { name: string } | null;
 }
 
-export default async function RingkasanPage() {
+export default async function RingkasanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ bulan?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const now = new Date();
-  const ctx = monthContext(now);
+  const ref = monthRef((await searchParams).bulan, now);
+  const ctx = monthContext(ref);
 
   const [txnRes, budgetRes, catRes] = await Promise.all([
     supabase
       .from('transactions')
       .select('amount, transaction_date, description, category_id, categories(name)')
       .gte('transaction_date', ctx.prevMonthStart)
+      .lt('transaction_date', ctx.nextMonthStart)
       .order('transaction_date', { ascending: true }),
     supabase
       .from('budgets')
       .select('id, category_id, amount_limit')
       .eq('user_id', user!.id)
-      .eq('month', now.getMonth() + 1)
-      .eq('year', now.getFullYear()),
+      .eq('month', ref.getMonth() + 1)
+      .eq('year', ref.getFullYear()),
     supabase.from('categories').select('id, name').eq('user_id', user!.id),
   ]);
 
@@ -67,7 +75,7 @@ export default async function RingkasanPage() {
     (id) => nameById.get(id) ?? 'Tanpa kategori'
   );
 
-  const periodLabel = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  const periodLabel = ref.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   const generated = now.toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
 
   const th =
@@ -88,6 +96,8 @@ export default async function RingkasanPage() {
         </Link>
         <PrintButton />
       </div>
+
+      <MonthNav refDate={ref} basePath="/ringkasan" />
 
       {/* Lembar dokumen — satu panel krem, konsisten light/dark & cetak */}
       <article className="slat grain space-y-7 px-6 py-7 text-ink sm:px-9 sm:py-9">
@@ -130,7 +140,7 @@ export default async function RingkasanPage() {
               {slices.length === 0 && (
                 <tr>
                   <td className={td} colSpan={3}>
-                    Belum ada transaksi bulan ini.
+                    Belum ada transaksi di bulan ini.
                   </td>
                 </tr>
               )}
@@ -167,7 +177,7 @@ export default async function RingkasanPage() {
         )}
 
         <section>
-          <h2 className="stencil mb-2 text-sm tracking-widest text-ink">Semua transaksi bulan ini</h2>
+          <h2 className="stencil mb-2 text-sm tracking-widest text-ink">Semua transaksi</h2>
           <table className="w-full border-collapse">
             <thead>
               <tr>

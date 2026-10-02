@@ -4,6 +4,7 @@ import { ensureRecurringPosted } from '@/app/(dashboard)/transactions/actions';
 import { formatCurrency } from '@/lib/utils';
 import {
   monthContext,
+  monthRef,
   sumAmount,
   deltaPct,
   categoryBreakdown,
@@ -13,18 +14,28 @@ import {
 import PapanBanner from '@/components/ui/PapanBanner';
 import CategoryDonut from '@/components/charts/CategoryDonut';
 import DailyTrendChart from '@/components/charts/DailyTrendChart';
+import MonthNav from '@/components/ui/MonthNav';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ bulan?: string }>;
+}) {
   await ensureRecurringPosted();
+
+  const now = monthRef((await searchParams).bulan);
+  const ctx = monthContext(now);
+  const isCurrentMonth = ctx.today === monthContext().today;
 
   const supabase = await createClient();
   const { data } = await supabase
     .from('transactions')
     .select('amount, transaction_date, categories(name)')
+    .gte('transaction_date', ctx.prevMonthStart)
+    .lt('transaction_date', ctx.nextMonthStart)
     .order('transaction_date', { ascending: false });
 
   const txns = (data ?? []) as unknown as TxnLite[];
-  const ctx = monthContext();
 
   const monthRows = txns.filter((t) => t.transaction_date >= ctx.monthStart);
   const prevRows = txns.filter(
@@ -39,12 +50,13 @@ export default async function DashboardPage() {
   const daily = dailyTotals(monthRows, ctx.monthStart, ctx.dayOfMonth);
   const perDay = ctx.dayOfMonth > 0 ? monthTotal / ctx.dayOfMonth : 0;
 
-  const now = new Date();
   const periodLabel = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   const monthLabel = now.toLocaleDateString('id-ID', { month: 'long' });
 
   return (
     <div className="space-y-5">
+      <MonthNav refDate={now} basePath="/dashboard" />
+
       <PapanBanner
         label="Pengeluaran"
         periodLabel={periodLabel}
@@ -71,7 +83,7 @@ export default async function DashboardPage() {
             {formatCurrency(Math.round(perDay))}
           </p>
           <span className="stencil text-xs tracking-wide text-ink-soft">
-            baru hari ke-{ctx.dayOfMonth}
+            {isCurrentMonth ? `baru hari ke-${ctx.dayOfMonth}` : `selama ${ctx.dayOfMonth} hari`}
           </span>
         </div>
       </div>
@@ -81,18 +93,20 @@ export default async function DashboardPage() {
         <DailyTrendChart points={daily} monthLabel={monthLabel} />
       </div>
 
-      <div className="bolted grain flex items-center justify-between border border-board-deep bg-board px-5 py-4 text-chalk">
-        <p className="stencil text-sm tracking-wide">Belum nyatet hari ini?</p>
-        <Link
-          href="/transactions"
-          className="stencil border-2 border-board-deep bg-signal px-4 py-2 text-sm tracking-wide text-chalk shadow-[0_3px_0_0_rgb(0_0_0/0.25)]"
-        >
-          + Catat
-        </Link>
-      </div>
+      {isCurrentMonth && (
+        <div className="bolted grain flex items-center justify-between border border-board-deep bg-board px-5 py-4 text-chalk">
+          <p className="stencil text-sm tracking-wide">Belum nyatet hari ini?</p>
+          <Link
+            href="/transactions"
+            className="stencil border-2 border-board-deep bg-signal px-4 py-2 text-sm tracking-wide text-chalk shadow-[0_3px_0_0_rgb(0_0_0/0.25)]"
+          >
+            + Catat
+          </Link>
+        </div>
+      )}
 
       <Link
-        href="/ringkasan"
+        href={isCurrentMonth ? '/ringkasan' : `/ringkasan?bulan=${ctx.monthStart.slice(0, 7)}`}
         className="slat grain block px-4 py-3 text-center text-ink transition-transform hover:-translate-y-0.5"
       >
         <span className="stencil text-sm tracking-wide text-board">Cetak ringkasan bulanan (PDF) →</span>
