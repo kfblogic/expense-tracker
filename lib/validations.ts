@@ -42,3 +42,13 @@ export type AuthInput = z.infer<typeof authSchema>;
 export type TransactionInput = z.infer<typeof transactionSchema>;
 export type CategoryInput = z.infer<typeof categorySchema>;
 export type BudgetInput = z.infer<typeof budgetSchema>;
+
+/** Balasan model AI untuk scan struk. Field yang ngaco dijadikan null, bukan gagal total. */
+export const receiptScanSchema = z.object({
+  total: z.coerce.number().positive().max(1_000_000_000_000).nullable().catch(null),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().catch(null),
+  merchant: z.string().trim().max(100).nullable().catch(null),
+  category: z.string().trim().nullable().catch(null),
+});
+
+export type ReceiptScan = z.infer<typeof receiptScanSchema>;

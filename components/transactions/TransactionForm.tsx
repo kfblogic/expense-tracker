@@ -1,7 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
-import { saveTransaction, createCategory } from '@/app/(dashboard)/transactions/actions';
+import { useActionState, useEffect, useRef, useState } from 'react';
+import { saveTransaction, createCategory, scanReceipt } from '@/app/(dashboard)/transactions/actions';
 import { categoryColor } from '@/lib/category-colors';
 import { isoLocal } from '@/lib/aggregate';
 import { useToast } from '@/components/ui/Toast';
@@ -26,6 +26,20 @@ interface TransactionFormProps {
 }
 
 const fieldLabel = 'stencil block text-xs tracking-widest text-ink-soft';
+/** Kecilkan foto di browser: hemat kuota upload & token model, tetap cukup tajam buat teks struk. */
+async function shrinkImage(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode'))), 'image/jpeg', 0.8)
+  );
+}
+
 const fieldBox =
   'mt-1 block w-full min-w-0 border border-line bg-cream-deep px-3 py-2 text-sm text-ink outline-none focus:border-signal';
 
@@ -48,6 +62,37 @@ export default function TransactionForm({ categories: initialCategories, transac
   const [addingCategory, setAddingCategory] = useState(false);
 
   const today = isoLocal(new Date());
+  const [date, setDate] = useState(transaction?.transaction_date ?? today);
+  const [description, setDescription] = useState(transaction?.description ?? '');
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+
+  async function handleScan(file: File | undefined) {
+    if (!file) return;
+    setScanError(null);
+    setScanning(true);
+    try {
+      const fd = new FormData();
+      fd.append('receipt', await shrinkImage(file), 'struk.jpg');
+      const result = await scanReceipt(fd);
+      if (!result.ok) {
+        setScanError(result.error);
+        return;
+      }
+      setAmount(String(result.amount));
+      if (result.date) setDate(result.date);
+      if (result.merchant) setDescription(result.merchant);
+      if (result.categoryId) setCategoryId(result.categoryId);
+      push('Struk terbaca — cek dulu sebelum dicatat');
+    } catch {
+      setScanError('Foto nggak bisa dibuka, coba foto lain.');
+    } finally {
+      setScanning(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
 
   useEffect(() => {
     if (state?.ok) {
@@ -79,6 +124,27 @@ export default function TransactionForm({ categories: initialCategories, transac
       <input type="hidden" name="categoryId" value={categoryId} />
       {/* Nilai yang disubmit = digit mentah; input terlihat cuma buat tampilan berformat. */}
       <input type="hidden" name="amount" value={amount} />
+
+      {!transaction && (
+        <div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => handleScan(e.target.files?.[0])}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={scanning}
+            className="stencil w-full rounded-lg border-2 border-dashed border-board bg-cream px-3 py-2.5 text-sm tracking-wide text-board hover:bg-cream-deep disabled:opacity-60"
+          >
+            {scanning ? 'Membaca struk…' : 'Scan Struk'}
+          </button>
+          {scanError && <p className="mt-1 text-xs text-signal-deep">{scanError}</p>}
+        </div>
+      )}
 
       <div>
         <span className={fieldLabel}>Jumlah</span>
@@ -163,7 +229,8 @@ export default function TransactionForm({ categories: initialCategories, transac
             name="transactionDate"
             required
             max={today}
-            defaultValue={transaction?.transaction_date ?? today}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
             className={fieldBox}
           />
         </label>
@@ -175,7 +242,8 @@ export default function TransactionForm({ categories: initialCategories, transac
           name="description"
           rows={2}
           maxLength={500}
-          defaultValue={transaction?.description ?? ''}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
           placeholder="mis. makan siang sama tim"
           className={fieldBox}
         />
