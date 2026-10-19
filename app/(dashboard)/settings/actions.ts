@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { createHash, randomBytes } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 import { categorySchema } from '@/lib/validations';
 
@@ -178,5 +179,43 @@ export async function deleteCategoryById(id: string): Promise<ActionResult> {
   }
 
   revalidateCategoryConsumers();
+  return { ok: true };
+}
+
+// --- Token kirim struk (iOS Shortcuts) ---------------------------------------
+
+/**
+ * Buat (atau ganti) token pribadi untuk POST /api/receipts. Yang disimpan cuma
+ * hash SHA-256; token mentah hanya dikembalikan sekali ke UI.
+ */
+export async function createReceiptToken(): Promise<
+  { ok: true; token: string } | { ok: false; error: string }
+> {
+  const { supabase, user } = await getSession();
+  if (!user) return { ok: false, error: 'Sesi kamu habis, masuk lagi ya.' };
+
+  const token = randomBytes(32).toString('base64url'); // 43 karakter
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+
+  const { error } = await supabase
+    .from('receipt_tokens')
+    .upsert(
+      { user_id: user.id, token_hash: tokenHash, last_used_at: null },
+      { onConflict: 'user_id' }
+    );
+  if (error) return { ok: false, error: 'Gagal membuat token. Coba lagi.' };
+
+  revalidatePath('/settings');
+  return { ok: true, token };
+}
+
+export async function revokeReceiptToken(): Promise<ActionResult> {
+  const { supabase, user } = await getSession();
+  if (!user) return { ok: false, error: 'Sesi kamu habis, masuk lagi ya.' };
+
+  const { error } = await supabase.from('receipt_tokens').delete().eq('user_id', user.id);
+  if (error) return { ok: false, error: 'Gagal mencabut token. Coba lagi.' };
+
+  revalidatePath('/settings');
   return { ok: true };
 }

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import RecurringManager, { type RecurringItem } from '@/components/settings/RecurringManager';
 import CategoryManager, { type CategoryRow } from '@/components/settings/CategoryManager';
+import ReceiptTokenManager from '@/components/settings/ReceiptTokenManager';
 import type { Interval } from '@/lib/recurring';
 import type { ThemePref } from './actions';
 
@@ -13,7 +14,7 @@ export default async function SettingsPage() {
 
   const theme = (user?.user_metadata?.theme as ThemePref | undefined) ?? 'system';
 
-  const [recRes, catRes] = await Promise.all([
+  const [recRes, catRes, tokRes] = await Promise.all([
     supabase
       .from('recurring_transactions')
       .select('id, amount, description, interval, day_of_month, active, next_run, categories(name)')
@@ -25,7 +26,19 @@ export default async function SettingsPage() {
       .eq('user_id', user!.id)
       .order('is_default', { ascending: false })
       .order('name', { ascending: true }),
+    supabase
+      .from('receipt_tokens')
+      .select('created_at, last_used_at')
+      .eq('user_id', user!.id)
+      .maybeSingle(),
   ]);
+
+  const tokenInfo = tokRes.data
+    ? {
+        createdAt: tokRes.data.created_at as string,
+        lastUsedAt: (tokRes.data.last_used_at as string | null) ?? null,
+      }
+    : null;
 
   const items: RecurringItem[] = (recRes.data ?? []).map((r) => {
     const cat = r.categories as unknown as { name: string } | { name: string }[] | null;
@@ -81,6 +94,17 @@ export default async function SettingsPage() {
         </p>
         <div className="mt-3">
           <RecurringManager items={items} />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="stencil text-sm tracking-widest text-chalk">Kirim struk dari iPhone</h2>
+        <p className="mt-1 text-xs text-chalk/60">
+          Token pribadi untuk Pintasan iOS: bagikan screenshot struk, langsung tercatat tanpa buka
+          aplikasi.
+        </p>
+        <div className="mt-3">
+          <ReceiptTokenManager info={tokenInfo} />
         </div>
       </section>
     </div>
