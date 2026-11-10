@@ -129,9 +129,8 @@ export async function saveTransaction(
  * Catch-up transaksi berulang: bukukan tiap occurrence yang jatuh tempo lalu
  * majukan next_run. Dipanggil saat halaman transaksi/dashboard dibuka.
  *
- * ponytail: tanpa lock — dua load bersamaan (mis. prefetch) bisa dobel-posting.
- * Batas diterima untuk app pribadi; kalau jadi masalah, bungkus dengan
- * pg advisory lock per user atau pindah ke satu cron job.
+ * Anti dobel-posting: next_run diklaim lewat update bersyarat (compare-and-set)
+ * sebelum insert, jadi load paralel cuma satu yang membukukan.
  *
  * Tanpa revalidatePath: dipanggil saat render RSC (revalidate saat render
  * dilarang Next), dan halaman pemanggil query datanya sendiri setelah ini.
@@ -161,6 +160,18 @@ export async function ensureRecurringPosted(): Promise<void> {
     );
     if (dates.length === 0) continue;
 
+    // Klaim dulu secara atomik: hanya request yang berhasil memajukan next_run
+    // dari nilai lama yang boleh insert. Request paralel (prefetch, dashboard +
+    // transaksi) dapat 0 baris → skip, jadi tidak dobel-posting.
+    const { data: claimed } = await supabase
+      .from('recurring_transactions')
+      .update({ next_run: nextRun })
+      .eq('id', rule.id)
+      .eq('user_id', user.id)
+      .eq('next_run', rule.next_run)
+      .select('id');
+    if (!claimed || claimed.length === 0) continue;
+
     const { error } = await supabase.from('transactions').insert(
       dates.map((d) => ({
         user_id: user.id,
@@ -170,13 +181,15 @@ export async function ensureRecurringPosted(): Promise<void> {
         transaction_date: d,
       }))
     );
-    if (error) continue; // jangan majukan next_run kalau insert gagal
-
-    await supabase
-      .from('recurring_transactions')
-      .update({ next_run: nextRun })
-      .eq('id', rule.id)
-      .eq('user_id', user.id);
+    if (error) {
+      // insert gagal → kembalikan klaim supaya dicoba lagi kunjungan berikutnya
+      await supabase
+        .from('recurring_transactions')
+        .update({ next_run: rule.next_run })
+        .eq('id', rule.id)
+        .eq('user_id', user.id)
+        .eq('next_run', nextRun);
+    }
   }
 }
 
